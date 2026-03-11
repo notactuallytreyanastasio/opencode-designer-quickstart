@@ -77,36 +77,113 @@ Every interactive element MUST have a unique `id` attribute. Pattern:
 
 This is critical for testing with `has_element?/2`.
 
+## Command Execution -- YOU MUST FOLLOW THESE WORKFLOWS
+
+You have 5 commands. When a designer triggers one (either by typing the slash command
+OR by saying something that maps to it), you MUST execute the FULL workflow defined
+in the corresponding `.opencode/commands/<name>.md` file, step by step. Do not skip
+steps. Do not improvise your own workflow. The command files are your source of truth.
+
+### Automatic command detection
+
+Designers will NOT always type `/create`. They'll say things naturally. You MUST
+detect intent and execute the right command workflow automatically:
+
+**CREATE triggers** -- execute the full `.opencode/commands/create.md` workflow:
+- "I want to build a tooltip"
+- "let's make a new dropdown"
+- "add a progress bar component"
+- "can we build a modal?"
+- Any request to build something that doesn't exist yet
+
+**UPDATE triggers** -- execute the full `.opencode/commands/update.md` workflow:
+- "change the button colors"
+- "add a hover state to the datepicker"
+- "the table needs sorting"
+- "make the loading spinner bigger"
+- Any request to modify something that already exists
+
+**IDEATE triggers** -- execute the full `.opencode/commands/ideate.md` workflow:
+- "what if we had a sidebar?"
+- "I'm thinking about a notification system"
+- "brainstorm some ideas for navigation"
+- "how would we approach a carousel?"
+- Any speculative/exploratory question about components
+
+**CHECKPOINT triggers** -- execute the full `.opencode/commands/checkpoint.md` workflow:
+- "save this"
+- "save my progress"
+- "checkpoint"
+- "snapshot"
+- "let me save here"
+- "good stopping point"
+- Any request to preserve current state
+
+**DONE triggers** -- execute the full `.opencode/commands/done.md` workflow:
+- "I'm done"
+- "ship it"
+- "make a PR"
+- "create a pull request"
+- "let's wrap this up"
+- "push this up"
+- "ready for review"
+- Any indication the designer is finished with this branch's work
+
+### When in doubt, ASK
+
+If you can't tell whether the designer wants to CREATE vs UPDATE, check the SQLite DB:
+```sql
+SELECT name FROM design_components WHERE name LIKE '%<their_term>%';
+```
+If it exists, it's an UPDATE. If not, it's a CREATE.
+
+If you can't tell whether they want to IDEATE vs CREATE, ask:
+"Do you want to brainstorm this first, or jump straight into building it?"
+
+### Between commands: always be aware of git state
+
+Before executing ANY command workflow, always run:
+```
+git branch --show-current
+git status --porcelain
+```
+
+This tells you:
+- Whether you need to branch (on main? -> branch first)
+- Whether there's uncommitted work (dirty? -> checkpoint first or warn)
+- Whether you're on the right branch for the task
+
 ## Translating Designer Language
 
-Designers don't speak git. Here's how to interpret common phrases:
+Designers don't speak git or Elixir. Beyond command detection above, here's how to
+handle other common phrases:
 
 | Designer says | You do |
 |---|---|
-| "save this" / "checkpoint" / "snapshot" | `/checkpoint` -- commit on current branch |
-| "I'm done" / "ship it" / "make a PR" | `/done` -- precommit, push, create PR |
-| "let's start fresh" / "new idea" | Checkpoint current work, switch to main, new branch |
-| "go back" / "undo that" | `git checkout -- <file>` for unstaged, or discuss options |
-| "what do we have?" / "show me everything" | Query the SQLite DB and list all components |
-| "start over on this" | Reset the current branch to its base, or create a new branch |
+| "let's start fresh" / "new idea" | Run CHECKPOINT on current branch, `git checkout main`, then ask what they want to CREATE |
+| "go back" / "undo that" | `git checkout -- <file>` for unstaged changes, or `git stash` and explain |
+| "what do we have?" / "show me everything" | Query SQLite: `SELECT name, status, category, description FROM design_components ORDER BY name;` |
+| "start over on this" | Checkpoint current state, create new branch from main with same purpose |
+| "actually, let's do X instead" | CHECKPOINT current branch, switch to main, start new branch for X |
+| "never mind" / "scrap this" | Warn that the branch will be left as-is, switch to main, do NOT delete the branch |
+| "where was I?" / "what's the status?" | Show current branch, uncommitted changes, and last few commits |
+| "run it" / "let me see it" | Ensure Phoenix server is running, share http://localhost:4000/showcase |
 
 ## Living Memory
 
-The SQLite database at `.opencode/design_system.db` tracks all components. Before ANY work:
+The SQLite database at `.opencode/design_system.db` tracks all components.
 
+**Before ANY work**, always query the DB to understand what exists:
 ```sql
 SELECT name, status, category, description FROM design_components ORDER BY name;
 ```
 
-After creating or updating a component, ALWAYS update the DB. After ideating, optionally insert a draft row.
+**After creating a component**: INSERT a new row (see `/create` workflow step 4)
+**After updating a component**: UPDATE the existing row (see `/update` workflow step 5)
+**After ideating**: optionally INSERT a draft row (see `/ideate` workflow step 5)
 
-## Available Commands
-
-- `/create <name>` -- Create a new component (branches, tests first, builds, commits)
-- `/ideate <concept>` -- Brainstorm a component (no code, discussion only)
-- `/update <name>` -- Update an existing component (branches, tests first, modifies, commits)
-- `/checkpoint` -- Save current progress as a commit
-- `/done` -- Finish work, run precommit, push, create PR
+The living memory is the single source of truth for what the design system contains.
+Always consult it before suggesting what's possible, and always update it after changes.
 
 ## File Reference
 
