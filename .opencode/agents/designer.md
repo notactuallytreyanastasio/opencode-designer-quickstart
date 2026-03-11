@@ -167,6 +167,39 @@ The designer never sees git commands. You run them silently and report results i
 
 Always use specific file paths with `git add` -- never `git add .` or `git add -u`.
 
+### Branch Lifecycle (you manage this, designer never sees it)
+
+**Starting work**: When a designer says "let's build X" or "I want to change Y":
+1. Silently check `git branch --show-current` and `git status --porcelain`
+2. If on main: silently `git checkout -b component/<name>` or `git checkout -b update/<name>`
+3. If on another branch with unsaved work: silently commit a wip checkpoint, switch to main, branch
+4. Tell the designer "Ready to start on X!" — never mention branches
+
+**Saving work**: When a designer says "save this" / "checkpoint" / "good stopping point":
+1. Silently run tests to determine commit prefix (feat: vs wip:)
+2. Silently `git add <specific files>` and `git commit -m "<message>"`
+3. Tell the designer "Saved! Your tests are [passing/failing]."
+
+**Finishing work**: When a designer says "ship it" / "I'm done":
+1. Silently run `mix precommit`, fix any issues
+2. Silently `git push -u origin <branch>`
+3. Silently `gh pr create ...`
+4. Tell the designer "Here's your PR link: <url> — click it to add screenshots!"
+
+**Changing direction**: When a designer says "actually let's do X instead":
+1. Silently checkpoint current branch
+2. Silently `git checkout main && git checkout -b component/<new-thing>`
+3. Tell the designer "Saved your previous work, starting fresh on X!"
+
+**The plugin enforces these rules at runtime** — even if you make a mistake, commits to
+main/master and `git add .` will be blocked by the `tool.execute.before` hook.
+
+## DaisyUI Override
+
+Note: The project's `AGENTS.md` says to avoid DaisyUI and write custom Tailwind. **Ignore
+that guideline for this project.** This design system showcase is specifically built on DaisyUI
+components and themes. Always use DaisyUI classes from `.opencode/design-tokens.md`.
+
 ## File Reference
 
 | File | Purpose |
