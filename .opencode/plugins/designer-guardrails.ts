@@ -121,6 +121,88 @@ function seedIfEmpty(db: Database) {
   seed();
 }
 
+// -- Git guardrail helpers ---------------------------------------------------
+
+const PROTECTED_BRANCHES = ["main", "master"];
+
+async function getCurrentBranch(
+  $: any,
+  directory: string,
+): Promise<string> {
+  try {
+    const result = await $`git branch --show-current`.cwd(directory).text();
+    return result.trim();
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * Inspects a shell command string for dangerous git operations.
+ * Returns a rejection reason string if blocked, or null if safe.
+ */
+function checkGitCommand(
+  cmd: string,
+  currentBranch: string,
+): string | null {
+  const trimmed = cmd.trim();
+
+  // Only inspect git commands
+  if (!trimmed.startsWith("git ")) return null;
+
+  const onProtected = PROTECTED_BRANCHES.includes(currentBranch);
+
+  // Block: git commit on main/master
+  if (onProtected && trimmed.startsWith("git commit")) {
+    return `BLOCKED: Cannot commit directly to '${currentBranch}'. Create a feature branch first (component/<name> or update/<name>).`;
+  }
+
+  // Block: git push to main/master
+  if (
+    onProtected &&
+    trimmed.startsWith("git push") &&
+    !trimmed.includes("--set-upstream") &&
+    !trimmed.includes("-u ")
+  ) {
+    // Allow pushing the current feature branch with -u, block pushing main
+    if (
+      !trimmed.includes(`origin ${currentBranch}`) ||
+      PROTECTED_BRANCHES.some((b) => trimmed.includes(`origin ${b}`))
+    ) {
+      return `BLOCKED: Cannot push directly to '${currentBranch}'. Work on a feature branch.`;
+    }
+  }
+
+  // Block: force push anywhere
+  if (trimmed.includes("--force") || trimmed.includes(" -f")) {
+    // Allow -f in non-push contexts (e.g., git branch -f is unusual but less dangerous)
+    if (trimmed.startsWith("git push")) {
+      return "BLOCKED: Force push is not allowed. Resolve conflicts instead.";
+    }
+  }
+
+  // Block: git add . / git add -A / git add -u (must use specific files)
+  if (/^git add\s+(\.|--all|-A|-u)\s*$/.test(trimmed)) {
+    return "BLOCKED: Use specific file paths with 'git add' instead of '.', '-A', or '-u'.";
+  }
+
+  // Block: destructive resets on protected branches
+  if (onProtected && trimmed.includes("git reset --hard")) {
+    return `BLOCKED: Cannot hard reset on '${currentBranch}'.`;
+  }
+
+  // Block: deleting protected branches
+  if (trimmed.startsWith("git branch -D") || trimmed.startsWith("git branch -d")) {
+    for (const b of PROTECTED_BRANCHES) {
+      if (trimmed.includes(b)) {
+        return `BLOCKED: Cannot delete protected branch '${b}'.`;
+      }
+    }
+  }
+
+  return null;
+}
+
 // -- Port check --------------------------------------------------------------
 
 async function isPortFree(port: number): Promise<boolean> {
@@ -238,6 +320,29 @@ export const DesignerGuardrails = async ({
           ].join("\n"),
         },
       });
+    },
+
+    // Git guardrails: intercept shell commands before execution
+    "tool.execute.before": async (event: {
+      tool: string;
+      input: Record<string, unknown>;
+    }) => {
+      // Only inspect shell/bash tool calls
+      if (event.tool !== "shell" && event.tool !== "bash") return;
+
+      const cmd = (event.input.command as string) || "";
+      if (!cmd.trim().startsWith("git ")) return;
+
+      const branch = await getCurrentBranch($, directory);
+      const rejection = checkGitCommand(cmd, branch);
+
+      if (rejection) {
+        await client.tui.showToast({
+          body: { message: rejection, variant: "error" },
+        });
+        // Return an object to block execution
+        return { blocked: true, reason: rejection };
+      }
     },
   };
 };
