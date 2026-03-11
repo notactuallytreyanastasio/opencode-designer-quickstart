@@ -323,14 +323,14 @@ export const DesignerGuardrails = async ({
     },
 
     // Git guardrails: intercept shell commands before execution
-    "tool.execute.before": async (event: {
-      tool: string;
-      input: Record<string, unknown>;
-    }) => {
+    "tool.execute.before": async (
+      input: { tool: string },
+      output: { args: Record<string, unknown> },
+    ) => {
       // Only inspect shell/bash tool calls
-      if (event.tool !== "shell" && event.tool !== "bash") return;
+      if (input.tool !== "shell" && input.tool !== "bash") return;
 
-      const cmd = (event.input.command as string) || "";
+      const cmd = (output.args.command as string) || "";
       if (!cmd.trim().startsWith("git ")) return;
 
       const branch = await getCurrentBranch($, directory);
@@ -340,8 +340,7 @@ export const DesignerGuardrails = async ({
         await client.tui.showToast({
           body: { message: rejection, variant: "error" },
         });
-        // Return an object to block execution
-        return { blocked: true, reason: rejection };
+        throw new Error(rejection);
       }
     },
   };
