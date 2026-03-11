@@ -2,6 +2,7 @@
 name: update
 description: Update an existing design system component
 arguments: component_name
+agent: designer
 ---
 
 The designer wants to **UPDATE**: `$ARGUMENTS`

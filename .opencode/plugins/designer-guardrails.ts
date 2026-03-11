@@ -7,9 +7,9 @@ import { join } from "path";
 // On every OpenCode session start this plugin:
 //   1. Initializes the SQLite "living memory" database
 //   2. Seeds the 3 existing showcase components (if table is empty)
-//   3. Compiles the Elixir project
+//   3. Compiles the Elixir project and runs migrations
 //   4. Starts the Phoenix server (if port 4000 is free)
-//   5. Prompts the designer: CREATE, IDEATE, or UPDATE?
+//   5. Shows the designer what's available and prompts for action
 // ---------------------------------------------------------------------------
 
 const DB_PATH = join(import.meta.dir, "..", "design_system.db");
@@ -41,7 +41,9 @@ function initDatabase(): Database {
 }
 
 function seedIfEmpty(db: Database) {
-  const count = db.query("SELECT COUNT(*) as cnt FROM design_components").get() as { cnt: number };
+  const count = db
+    .query("SELECT COUNT(*) as cnt FROM design_components")
+    .get() as { cnt: number };
 
   if (count.cnt > 0) return;
 
@@ -119,26 +121,6 @@ function seedIfEmpty(db: Database) {
   seed();
 }
 
-// -- Git helpers -------------------------------------------------------------
-
-async function getCurrentBranch($: any, directory: string): Promise<string> {
-  try {
-    const result = await $`git branch --show-current`.cwd(directory).text();
-    return result.trim();
-  } catch {
-    return "unknown";
-  }
-}
-
-async function hasUncommittedChanges($: any, directory: string): Promise<boolean> {
-  try {
-    const result = await $`git status --porcelain`.cwd(directory).text();
-    return result.trim() !== "";
-  } catch {
-    return false;
-  }
-}
-
 // -- Port check --------------------------------------------------------------
 
 async function isPortFree(port: number): Promise<boolean> {
@@ -155,10 +137,9 @@ async function isPortFree(port: number): Promise<boolean> {
   }
 }
 
-// -- Plugin export -----------------------------------------------------------
+// -- Plugin export (named export, returns hooks object) ----------------------
 
-export default function designerGuardrails({
-  project,
+export const DesignerGuardrails = async ({
   client,
   $,
   directory,
@@ -168,75 +149,95 @@ export default function designerGuardrails({
   $: any;
   directory: string;
   worktree: string;
-}) {
-  // Boot: session.created
-  client.on("session.created", async () => {
-    // 1. Init SQLite
-    const db = initDatabase();
-    seedIfEmpty(db);
+}) => {
+  return {
+    // Boot: fires when a new session is created
+    "session.created": async () => {
+      // 1. Init SQLite living memory
+      const db = initDatabase();
+      seedIfEmpty(db);
 
-    const componentCount = db.query("SELECT COUNT(*) as cnt FROM design_components").get() as { cnt: number };
-    db.close();
+      const componentCount = db
+        .query("SELECT COUNT(*) as cnt FROM design_components")
+        .get() as { cnt: number };
 
-    // 2. Compile the project
-    client.tui.showToast(`Compiling project...`);
-    try {
-      await $`mix deps.get --quiet`.cwd(directory);
-      await $`mix compile --no-optional-deps`.cwd(directory);
-    } catch (err: any) {
-      client.tui.showToast(`Compile failed: ${err.message}`);
-    }
+      // Grab component names for context
+      const components = db
+        .query(
+          "SELECT name, status, category, description FROM design_components ORDER BY name",
+        )
+        .all() as Array<{
+        name: string;
+        status: string;
+        category: string;
+        description: string;
+      }>;
 
-    // 3. Start Phoenix server if port 4000 is free
-    const portFree = await isPortFree(4000);
-    if (portFree) {
-      // Fire and forget -- server runs in background
-      $`mix phx.server`.cwd(directory).catch(() => {});
-      client.tui.showToast(`Phoenix server starting at ${SHOWCASE_URL}`);
-    } else {
-      client.tui.showToast(`Port 4000 already in use -- server assumed running`);
-    }
+      db.close();
 
-    // 4. Git safety check
-    const branch = await getCurrentBranch($, directory);
-    const dirty = await hasUncommittedChanges($, directory);
-    const onMain = branch === "main" || branch === "master";
+      // 2. Compile the project and run migrations
+      await client.tui.showToast({
+        body: { message: "Compiling project and running migrations..." },
+      });
 
-    let gitStatus = "";
-    if (onMain && dirty) {
-      gitStatus = [
-        `GIT WARNING: You are on '${branch}' with uncommitted changes.`,
-        `Do NOT commit here. Use /create or /update to start a feature branch first.`,
-      ].join("\n");
-      client.tui.showToast(`Warning: uncommitted changes on ${branch}!`);
-    } else if (onMain) {
-      gitStatus = `Git: on '${branch}' (clean). Use /create or /update to start a feature branch.`;
-    } else if (dirty) {
-      gitStatus = `Git: on '${branch}' with uncommitted changes. Use /checkpoint to save your progress.`;
-    } else {
-      gitStatus = `Git: on '${branch}' (clean). Ready to work.`;
-    }
+      try {
+        await $`mix deps.get --quiet`.cwd(directory);
+        await $`mix compile --no-optional-deps`.cwd(directory);
+        await $`mix ecto.create --quiet`.cwd(directory).catch(() => {});
+        await $`mix ecto.migrate --quiet`.cwd(directory);
+      } catch (err: any) {
+        await client.tui.showToast({
+          body: {
+            message: `Build step failed: ${err.message}`,
+            variant: "error",
+          },
+        });
+      }
 
-    // 5. Inject context about existing components and git state
-    const summary = [
-      `Design System Living Memory: ${componentCount.cnt} components tracked in SQLite.`,
-      `Showcase URL: ${SHOWCASE_URL}`,
-      ``,
-      gitStatus,
-      ``,
-      `Available commands:`,
-      `  /create <name>   - Build a new component (test-first, creates branch)`,
-      `  /ideate <concept> - Brainstorm a component design (no code)`,
-      `  /update <name>   - Modify an existing component (creates branch)`,
-      `  /checkpoint      - Save current work ("save my progress")`,
-      `  /done            - Finish work and create a pull request`,
-    ].join("\n");
+      // 3. Start Phoenix server if port 4000 is free
+      const portFree = await isPortFree(4000);
+      if (portFree) {
+        // Fire and forget -- server runs in background
+        $`mix phx.server`.cwd(directory).catch(() => {});
+        await client.tui.showToast({
+          body: {
+            message: `Server starting at ${SHOWCASE_URL}`,
+            variant: "success",
+          },
+        });
+      } else {
+        await client.tui.showToast({
+          body: {
+            message: "Port 4000 in use -- server assumed running",
+          },
+        });
+      }
 
-    await client.session.prompt(summary, { noReply: true });
+      // 4. Build the component inventory for context
+      const componentList = components
+        .map(
+          (c) =>
+            `  - ${c.name} [${c.status}] (${c.category}): ${c.description}`,
+        )
+        .join("\n");
 
-    // 6. Prompt the designer
-    client.tui.appendPrompt(
-      "Do you want to CREATE, IDEATE, or UPDATE a component? (use /create, /ideate, or /update)"
-    );
-  });
-}
+      // 5. Pre-fill the prompt with a greeting so the designer sees what to do
+      await client.tui.appendPrompt({
+        body: {
+          text: [
+            `Design System ready! ${componentCount.cnt} components tracked.`,
+            `Open the showcase: ${SHOWCASE_URL}`,
+            ``,
+            `Components:`,
+            componentList,
+            ``,
+            `What would you like to do?`,
+            `  /create <name>  -- Build a new component`,
+            `  /ideate <name>  -- Brainstorm a component idea`,
+            `  /update <name>  -- Modify an existing component`,
+          ].join("\n"),
+        },
+      });
+    },
+  };
+};

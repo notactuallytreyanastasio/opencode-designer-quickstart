@@ -35,3 +35,6 @@ design_system_showoff-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Runtime SQLite DB created by the designer-guardrails plugin.
+.opencode/design_system.db
+

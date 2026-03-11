@@ -2,6 +2,7 @@
 name: create
 description: Create a new design system component (test-first)
 arguments: component_name
+agent: designer
 ---
 
 The designer wants to **CREATE** a new component: `$ARGUMENTS`

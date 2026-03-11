@@ -2,6 +2,7 @@
 name: done
 description: Finish current work and create a pull request
 arguments: optional_pr_title
+agent: designer
 ---
 
 The designer is finished and wants to ship their work.

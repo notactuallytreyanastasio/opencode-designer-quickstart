@@ -2,6 +2,7 @@
 name: ideate
 description: Brainstorm and plan a component design (no code)
 arguments: component_concept
+agent: designer
 ---
 
 The designer wants to **IDEATE** on: `$ARGUMENTS`

@@ -2,6 +2,7 @@
 name: checkpoint
 description: Save current work as a git checkpoint
 arguments: optional_message
+agent: designer
 ---
 
 The designer wants to save their progress.
