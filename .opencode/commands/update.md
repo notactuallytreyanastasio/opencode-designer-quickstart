@@ -74,7 +74,30 @@ Modify the relevant `describe` block in `test/design_system_showoff_web/live/sho
 Run: `mix test test/design_system_showoff_web/live/showcase_live_test.exs`
 The new/changed tests should **FAIL** (red phase). Existing unchanged tests should still pass.
 
-**Checkpoint**: commit the test changes:
+## Step 3.5: Design Review -- STOP AND ASK
+
+**Do NOT proceed to implementation yet.** The failing tests define the change. Present them
+to the designer in plain language so they can validate before you touch the component code.
+
+Summarize what will change as a checklist. For example:
+
+> Here's what I'm planning to change on **$ARGUMENTS**:
+>
+> - [New behavior / visual change described in plain English]
+> - [Another change]
+> - Existing behavior that stays the same: [list unchanged tests]
+>
+> **Does this match what you want? Anything to add or adjust?**
+
+**Wait for the designer to respond.** Do not continue until they confirm.
+
+If the designer wants changes:
+1. Update the tests to match their feedback
+2. Re-run to confirm the new/changed tests still fail (red) and existing tests still pass
+3. Present the updated checklist again
+4. Repeat until confirmed
+
+Once confirmed, checkpoint the tests:
 ```
 git add test/design_system_showoff_web/live/showcase_live_test.exs
 git commit -m "test: update tests for $ARGUMENTS changes"

@@ -52,7 +52,32 @@ Add a new `describe` block to `test/design_system_showoff_web/live/showcase_live
 Run the tests: `mix test test/design_system_showoff_web/live/showcase_live_test.exs`
 They should **FAIL** (red phase). This is correct and expected.
 
-**Checkpoint**: commit the failing tests:
+## Step 2.5: Design Review -- STOP AND ASK
+
+**Do NOT proceed to implementation yet.** The failing tests are the design spec. Present them
+to the designer in plain language so they can validate the intent before you build anything.
+
+Summarize what the tests assert as a checklist. For example:
+
+> Here's what I'm planning to build for **$ARGUMENTS**:
+>
+> - It will have a section on the showcase page
+> - It will show [describe initial visual state]
+> - When you [interaction], it will [outcome]
+> - When you [interaction], it will [outcome]
+> - It will use these DaisyUI styles: [list key classes]
+>
+> **Does this match what you have in mind? Want to add, remove, or change anything?**
+
+**Wait for the designer to respond.** This is a hard stop -- do not continue until they confirm.
+
+If the designer wants changes:
+1. Update the tests to match their feedback
+2. Re-run to confirm they still fail (red)
+3. Present the updated checklist again
+4. Repeat until the designer says "looks good" / "yes" / "go for it"
+
+Once confirmed, checkpoint the tests:
 ```
 git add test/design_system_showoff_web/live/showcase_live_test.exs
 git commit -m "test: add failing tests for $ARGUMENTS component"

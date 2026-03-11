@@ -37,11 +37,15 @@ If the premise changes mid-work (designer says "actually let's do X instead of Y
 
 Every component must have tests before it has code:
 1. Write the tests (they fail -- red phase)
-2. Commit the failing tests
-3. Write the implementation (tests pass -- green phase)
-4. Commit the implementation
-5. Update the SQLite living memory
-6. Commit the DB change
+2. **DESIGN REVIEW**: present the failing tests to the designer as a plain-language
+   checklist and **wait for confirmation** before proceeding. This is a hard stop.
+   The tests ARE the design spec -- the designer must agree they capture the right intent.
+3. Commit the confirmed tests
+4. Write the implementation (tests pass -- green phase)
+5. Screenshot the component and show the designer
+6. Commit the implementation
+7. Update the SQLite living memory
+8. Commit the DB change
 
 ### 4. STUB DATA ONLY
 
