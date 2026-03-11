@@ -119,6 +119,26 @@ function seedIfEmpty(db: Database) {
   seed();
 }
 
+// -- Git helpers -------------------------------------------------------------
+
+async function getCurrentBranch($: any, directory: string): Promise<string> {
+  try {
+    const result = await $`git branch --show-current`.cwd(directory).text();
+    return result.trim();
+  } catch {
+    return "unknown";
+  }
+}
+
+async function hasUncommittedChanges($: any, directory: string): Promise<boolean> {
+  try {
+    const result = await $`git status --porcelain`.cwd(directory).text();
+    return result.trim() !== "";
+  } catch {
+    return false;
+  }
+}
+
 // -- Port check --------------------------------------------------------------
 
 async function isPortFree(port: number): Promise<boolean> {
@@ -177,20 +197,44 @@ export default function designerGuardrails({
       client.tui.showToast(`Port 4000 already in use -- server assumed running`);
     }
 
-    // 4. Inject context about existing components
+    // 4. Git safety check
+    const branch = await getCurrentBranch($, directory);
+    const dirty = await hasUncommittedChanges($, directory);
+    const onMain = branch === "main" || branch === "master";
+
+    let gitStatus = "";
+    if (onMain && dirty) {
+      gitStatus = [
+        `GIT WARNING: You are on '${branch}' with uncommitted changes.`,
+        `Do NOT commit here. Use /create or /update to start a feature branch first.`,
+      ].join("\n");
+      client.tui.showToast(`Warning: uncommitted changes on ${branch}!`);
+    } else if (onMain) {
+      gitStatus = `Git: on '${branch}' (clean). Use /create or /update to start a feature branch.`;
+    } else if (dirty) {
+      gitStatus = `Git: on '${branch}' with uncommitted changes. Use /checkpoint to save your progress.`;
+    } else {
+      gitStatus = `Git: on '${branch}' (clean). Ready to work.`;
+    }
+
+    // 5. Inject context about existing components and git state
     const summary = [
       `Design System Living Memory: ${componentCount.cnt} components tracked in SQLite.`,
       `Showcase URL: ${SHOWCASE_URL}`,
       ``,
-      `To get started, use one of these commands:`,
-      `  /create <component_name> - Build a new component (test-first)`,
-      `  /ideate <concept>        - Brainstorm a component design`,
-      `  /update <component_name> - Modify an existing component`,
+      gitStatus,
+      ``,
+      `Available commands:`,
+      `  /create <name>   - Build a new component (test-first, creates branch)`,
+      `  /ideate <concept> - Brainstorm a component design (no code)`,
+      `  /update <name>   - Modify an existing component (creates branch)`,
+      `  /checkpoint      - Save current work ("save my progress")`,
+      `  /done            - Finish work and create a pull request`,
     ].join("\n");
 
     await client.session.prompt(summary, { noReply: true });
 
-    // 5. Prompt the designer
+    // 6. Prompt the designer
     client.tui.appendPrompt(
       "Do you want to CREATE, IDEATE, or UPDATE a component? (use /create, /ideate, or /update)"
     );

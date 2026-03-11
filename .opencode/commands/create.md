@@ -1,0 +1,114 @@
+---
+name: create
+description: Create a new design system component (test-first)
+arguments: component_name
+---
+
+The designer wants to **CREATE** a new component: `$ARGUMENTS`
+
+## Step 0: Git safety -- BRANCH FIRST
+
+**You MUST do this before ANY file changes.**
+
+1. Check the current branch: `git branch --show-current`
+2. If on `main` or `master`, you MUST create a new branch IMMEDIATELY:
+   ```
+   git checkout -b component/$ARGUMENTS
+   ```
+3. If already on a different branch (e.g., from a prior `/create` or `/update`):
+   - Check if there are uncommitted changes: `git status --porcelain`
+   - If dirty: checkpoint the current work first (commit with message "wip: checkpoint before switching to $ARGUMENTS"), then create the new branch FROM main:
+     ```
+     git checkout main
+     git checkout -b component/$ARGUMENTS
+     ```
+   - If clean and the branch name matches this component: you're fine, continue
+   - If clean and branch name is for a DIFFERENT component: switch to main first, then branch:
+     ```
+     git checkout main
+     git checkout -b component/$ARGUMENTS
+     ```
+
+**NEVER commit component work directly to main/master. This is non-negotiable.**
+
+## Step 1: Verify the component doesn't exist
+
+1. Open the SQLite database at `.opencode/design_system.db`
+2. Query `SELECT name FROM design_components` to list existing components
+3. Verify `$ARGUMENTS` doesn't already exist (if it does, suggest `/update` instead)
+4. Read `.opencode/design-tokens.md` for theme reference
+
+## Step 2: Write tests FIRST
+
+Add a new `describe` block to `test/design_system_showoff_web/live/showcase_live_test.exs`:
+
+- Test that the component section renders with a unique `id` (e.g., `#$ARGUMENTS-section`)
+- Test each interactive behavior the component should have
+- Test visual states (loading, active, disabled, etc.)
+- Test that DaisyUI classes are applied correctly via element selectors
+- Every test should use `has_element?/2` or `has_element?/3` -- never test raw HTML strings
+
+Run the tests: `mix test test/design_system_showoff_web/live/showcase_live_test.exs`
+They should **FAIL** (red phase). This is correct and expected.
+
+**Checkpoint**: commit the failing tests:
+```
+git add test/design_system_showoff_web/live/showcase_live_test.exs
+git commit -m "test: add failing tests for $ARGUMENTS component"
+```
+
+## Step 3: Build the component
+
+Add the component to `lib/design_system_showoff_web/live/showcase_live.ex`:
+
+- Add any new assigns in `mount/3`
+- Add `handle_event` clauses for interactions
+- Add the template section inside `#showcase-page` div
+- Use **stub data only** -- define it as a module attribute like `@stub_table_data`
+- Use DaisyUI classes from the theme (see `.opencode/design-tokens.md`)
+- Every interactive element MUST have a unique DOM `id`
+
+Run the tests again: `mix test test/design_system_showoff_web/live/showcase_live_test.exs`
+They should **PASS** (green phase).
+
+**Checkpoint**: commit the implementation:
+```
+git add lib/design_system_showoff_web/live/showcase_live.ex
+git commit -m "feat: add $ARGUMENTS component to showcase"
+```
+
+## Step 4: Update living memory
+
+Insert a new row into the `design_components` table in `.opencode/design_system.db`:
+
+```sql
+INSERT INTO design_components
+  (name, status, category, description, props, daisy_classes, test_file, source_location, commentary)
+VALUES
+  ('$ARGUMENTS', 'active', '<category>', '<description>', '<props_json>', '<classes>',
+   'test/design_system_showoff_web/live/showcase_live_test.exs',
+   'lib/design_system_showoff_web/live/showcase_live.ex:L<start>-L<end>',
+   '<commentary_json>');
+```
+
+**Checkpoint**: commit the DB update:
+```
+git add .opencode/design_system.db
+git commit -m "chore: register $ARGUMENTS in design system living memory"
+```
+
+## Step 5: Final checks
+
+1. Run `mix precommit` -- must pass with zero warnings and zero failures
+2. If precommit fails, fix issues and commit the fixes
+3. Tell the designer: "Your component is ready! Use `/done` when you want to create a PR."
+
+## Constraints
+
+- **PROTECT MAIN** -- never commit to main/master, always use a branch
+- **STUB DATA ONLY** -- no Ecto schemas, no migrations, no real backend
+- **SINGLE LIVEVIEW** -- everything goes in `ShowcaseLive`
+- **DAISY UI** -- use only DaisyUI classes from the existing themes
+- **UNIQUE IDS** -- every interactive element needs a unique DOM id
+- **TEST FIRST** -- tests must exist and fail before the component code is written
+- **ATOMIC COMMITS** -- small, logical commits at each phase (tests, implementation, DB)
