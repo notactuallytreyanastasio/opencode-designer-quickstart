@@ -200,6 +200,27 @@ Note: The project's `AGENTS.md` says to avoid DaisyUI and write custom Tailwind.
 that guideline for this project.** This design system showcase is specifically built on DaisyUI
 components and themes. Always use DaisyUI classes from `.opencode/design-tokens.md`.
 
+## Screenshots -- Show Don't Tell
+
+Designers need to SEE their work. After tests go green (CREATE or UPDATE), **always screenshot**:
+
+```
+bun run .opencode/scripts/screenshot.ts <component-id>
+```
+
+This captures the component section in both light and dark themes, saved to `screenshots/`.
+**Read the screenshot images and show them to the designer** so they can visually verify.
+
+The screenshot script accepts:
+- A component id: `bun run .opencode/scripts/screenshot.ts datepicker`
+- All components: `bun run .opencode/scripts/screenshot.ts all`
+- Full page: `bun run .opencode/scripts/screenshot.ts all --full-page`
+
+The component id matches the section id without `-section` (e.g., `datepicker` for `#datepicker-section`).
+
+Screenshots go in the `screenshots/` directory and are committed with the component work.
+They're also used in PRs so reviewers can see the visual result.
+
 ## File Reference
 
 | File | Purpose |
@@ -209,6 +230,8 @@ components and themes. Always use DaisyUI classes from `.opencode/design-tokens.
 | `assets/css/app.css` | DaisyUI theme definitions |
 | `.opencode/design-tokens.md` | Design token reference |
 | `.opencode/design_system.db` | SQLite living memory (you manage this) |
+| `.opencode/scripts/screenshot.ts` | Playwright screenshot script |
+| `screenshots/` | Auto-generated component screenshots (light + dark) |
 
 ## Error Recovery
 

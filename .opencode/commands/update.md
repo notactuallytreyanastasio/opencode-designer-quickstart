@@ -97,6 +97,27 @@ git add lib/design_system_showoff_web/live/showcase_live.ex
 git commit -m "feat: update $ARGUMENTS component"
 ```
 
+## Step 4.5: Screenshot the updated component
+
+Now that tests are green, capture screenshots so the designer can SEE the change:
+
+1. Make sure the Phoenix server is running (it should be from boot)
+2. Run the screenshot script for the updated component:
+   ```
+   bun run .opencode/scripts/screenshot.ts $ARGUMENTS
+   ```
+   This captures the component section in both light and dark themes.
+3. **Show the screenshots to the designer** -- read the images at:
+   - `screenshots/$ARGUMENTS-light.png`
+   - `screenshots/$ARGUMENTS-dark.png`
+4. Ask the designer: "Here's the updated component. Does this look right?"
+5. If more changes are needed, update the code, re-run tests, re-screenshot, and show again.
+6. Once the designer is happy, commit the screenshots:
+   ```
+   git add screenshots/$ARGUMENTS-light.png screenshots/$ARGUMENTS-dark.png
+   git commit -m "docs: update screenshots for $ARGUMENTS component"
+   ```
+
 ## Step 5: Update living memory
 
 ```sql

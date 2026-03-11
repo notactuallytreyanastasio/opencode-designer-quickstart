@@ -78,6 +78,27 @@ git add lib/design_system_showoff_web/live/showcase_live.ex
 git commit -m "feat: add $ARGUMENTS component to showcase"
 ```
 
+## Step 3.5: Screenshot the component
+
+Now that tests are green, capture screenshots so the designer can SEE the result:
+
+1. Make sure the Phoenix server is running (it should be from boot)
+2. Run the screenshot script for the new component:
+   ```
+   bun run .opencode/scripts/screenshot.ts $ARGUMENTS
+   ```
+   This captures the component section in both light and dark themes.
+3. **Show the screenshots to the designer** -- read the images at:
+   - `screenshots/$ARGUMENTS-light.png`
+   - `screenshots/$ARGUMENTS-dark.png`
+4. Ask the designer: "Here's what your component looks like. Want to tweak anything?"
+5. If changes are needed, update the code, re-run tests, re-screenshot, and show again.
+6. Once the designer is happy, commit the screenshots:
+   ```
+   git add screenshots/$ARGUMENTS-light.png screenshots/$ARGUMENTS-dark.png
+   git commit -m "docs: add screenshots for $ARGUMENTS component"
+   ```
+
 ## Step 4: Update living memory
 
 Insert a new row into the `design_components` table in `.opencode/design_system.db`:

@@ -35,7 +35,21 @@ If there are uncommitted changes, run a checkpoint first:
 - `mix test --no-color` to check test state
 - Stage and commit with an appropriate message (see `/checkpoint` rules)
 
-### 3. Run final quality checks
+### 3. Take final screenshots
+
+Capture screenshots of all components touched on this branch so they can be attached to the PR:
+
+```
+bun run .opencode/scripts/screenshot.ts all
+```
+
+Commit any new or updated screenshots:
+```
+git add screenshots/*.png
+git commit -m "docs: final screenshots for PR"
+```
+
+### 4. Run final quality checks
 
 ```
 mix precommit
@@ -44,7 +58,7 @@ mix precommit
 - If it fails: fix the issues, commit the fixes, and re-run until clean
 - All tests must pass, no warnings, format must be clean
 
-### 4. Push to remote
+### 5. Push to remote
 
 ```
 git push -u origin <branch-name>
@@ -53,7 +67,7 @@ git push -u origin <branch-name>
 If the push fails (e.g., no remote configured), tell the designer and suggest
 they set up the remote manually or ask for help.
 
-### 5. Create the pull request
+### 6. Create the pull request
 
 Determine the PR title:
 - If `$ARGUMENTS` provided, use that
@@ -86,13 +100,14 @@ gh pr create --title "<title>" --body "$(cat <<'EOF'
 
 ## Screenshots
 
-<!-- Designer: add your screenshots here! -->
+<!-- Drag and drop screenshots from the screenshots/ folder here -->
+<!-- Light and dark theme screenshots were auto-generated -->
 
 EOF
 )"
 ```
 
-### 6. Report to the designer
+### 7. Report to the designer
 
 Tell them:
 - The PR URL (clickable)
