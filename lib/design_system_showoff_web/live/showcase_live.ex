@@ -17,7 +17,8 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
     %{id: 5, name: "Free Range Eggs"},
     %{id: 6, name: "Olive Oil"},
     %{id: 7, name: "Cherry Tomatoes"},
-    %{id: 8, name: "Greek Yogurt"}
+    %{id: 8, name: "Greek Yogurt"},
+    %{id: 9, name: "Sparkling Water"}
   ]
 
   @impl true
