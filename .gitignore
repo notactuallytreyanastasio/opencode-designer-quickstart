@@ -38,3 +38,6 @@ npm-debug.log
 # Runtime SQLite DB created by the designer-guardrails plugin.
 .opencode/design_system.db
 
+# OpenCode plugin dependencies (installed by bun at runtime).
+.opencode/node_modules/
+
