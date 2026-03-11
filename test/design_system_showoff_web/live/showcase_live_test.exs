@@ -4,15 +4,16 @@ defmodule DesignSystemShowoffWeb.ShowcaseLiveTest do
   import Phoenix.LiveViewTest
 
   describe "ShowcaseLive page structure" do
-    test "renders the showcase page with all 3 component sections", %{conn: conn} do
+    test "renders the showcase page with all 4 component sections", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/showcase")
 
       # The page should have a title/header
       assert has_element?(view, "#showcase-page")
 
-      # All 3 component sections should be present
+      # All 4 component sections should be present
       assert has_element?(view, "#datepicker-section")
       assert has_element?(view, "#loading-button-section")
+      assert has_element?(view, "#product-search-bar-section")
       assert has_element?(view, "#data-table-section")
     end
   end
