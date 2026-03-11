@@ -130,6 +130,154 @@ defmodule DesignSystemShowoffWeb.ShowcaseLiveTest do
     end
   end
 
+  describe "Product Search Bar" do
+    test "renders the search bar section", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#product-search-bar-section")
+      assert has_element?(view, "#product-search-bar")
+    end
+
+    test "renders the search bar with fuchsia background", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # The search bar container should have the fuchsia background style
+      assert has_element?(view, "#product-search-bar[style*='background-color: #FF00FF']")
+    end
+
+    test "renders a search icon on the left", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#product-search-bar #product-search-bar-icon")
+    end
+
+    test "renders a filter icon on the right", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#product-search-bar #product-search-bar-filter-icon")
+    end
+
+    test "renders the text input for searching", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#product-search-bar-input")
+    end
+
+    test "shows autocomplete suggestions when typing", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Initially no dropdown visible
+      refute has_element?(view, "#product-search-bar-dropdown")
+
+      # Type a search query that matches grocery items
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Ban"})
+
+      # Autocomplete dropdown should appear with matching items
+      assert has_element?(view, "#product-search-bar-dropdown")
+    end
+
+    test "filters autocomplete suggestions based on input", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Type a partial grocery item name
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Avoc"})
+
+      # Should show matching suggestion
+      assert has_element?(view, "#product-search-bar-dropdown")
+      assert has_element?(view, "#product-search-bar-suggestion-4", "Avocados")
+
+      # Should NOT show non-matching items
+      refute has_element?(view, "#product-search-bar-suggestion-1")
+    end
+
+    test "selecting a suggestion adds a pill to the search bar", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Type and select a grocery item
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Sour"})
+      view |> element("#product-search-bar-suggestion-3") |> render_click()
+
+      # A pill should appear with baby blue background
+      assert has_element?(view, "#product-search-bar-pill-3")
+      assert has_element?(view, "#product-search-bar-pill-3[style*='background-color: #89CFF0']")
+    end
+
+    test "pills show product name and a remove button", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Select a grocery item
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Sour"})
+      view |> element("#product-search-bar-suggestion-3") |> render_click()
+
+      # Pill should contain the item name
+      assert has_element?(view, "#product-search-bar-pill-3", "Sourdough Bread")
+
+      # Pill should have a remove button
+      assert has_element?(view, "#product-search-bar-remove-3")
+    end
+
+    test "clicking remove on a pill removes it", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Select a grocery item
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Sour"})
+      view |> element("#product-search-bar-suggestion-3") |> render_click()
+      assert has_element?(view, "#product-search-bar-pill-3")
+
+      # Remove the pill
+      view |> element("#product-search-bar-remove-3") |> render_click()
+
+      # Pill should be gone
+      refute has_element?(view, "#product-search-bar-pill-3")
+    end
+
+    test "can select multiple products as pills", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Select first grocery item
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Sour"})
+      view |> element("#product-search-bar-suggestion-3") |> render_click()
+
+      # Select second grocery item
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Milk"})
+      view |> element("#product-search-bar-suggestion-2") |> render_click()
+
+      # Both pills should exist
+      assert has_element?(view, "#product-search-bar-pill-3")
+      assert has_element?(view, "#product-search-bar-pill-2")
+    end
+
+    test "already-selected products are not shown in autocomplete", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Select "Sourdough Bread"
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Sour"})
+      view |> element("#product-search-bar-suggestion-3") |> render_click()
+
+      # Search again — "Sourdough Bread" should not appear in suggestions
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Sour"})
+      refute has_element?(view, "#product-search-bar-suggestion-3")
+    end
+
+    test "input clears after selecting a product", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Type and select
+      view |> element("#product-search-bar-input") |> render_keyup(%{"value" => "Sour"})
+      view |> element("#product-search-bar-suggestion-3") |> render_click()
+
+      # Dropdown should close after selection
+      refute has_element?(view, "#product-search-bar-dropdown")
+    end
+
+    test "pills container allows wrapping for multiple pills", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # The pills area should use flex-wrap so pills stack when the bar is full
+      assert has_element?(view, "#product-search-bar-pills.flex-wrap")
+    end
+  end
+
   describe "Data Table" do
     test "renders the table with headers", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/showcase")
