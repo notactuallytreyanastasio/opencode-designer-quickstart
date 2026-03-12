@@ -306,4 +306,96 @@ defmodule DesignSystemShowoffWeb.ShowcaseLiveTest do
       assert has_element?(view, "#data-table .badge")
     end
   end
+
+  describe "Metric Tile" do
+    test "renders the metric tile section", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#metric-tile-section")
+    end
+
+    test "renders multiple metric tiles with unique IDs", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Should have at least 4 tiles to show variety
+      assert has_element?(view, "#metric-tile-1")
+      assert has_element?(view, "#metric-tile-2")
+      assert has_element?(view, "#metric-tile-3")
+      assert has_element?(view, "#metric-tile-4")
+    end
+
+    test "each tile displays a metric name", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Each tile should have a label element showing the stat name
+      assert has_element?(view, "#metric-tile-1 #metric-tile-name-1")
+      assert has_element?(view, "#metric-tile-2 #metric-tile-name-2")
+    end
+
+    test "each tile displays a formatted metric value", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Each tile should have a prominent value element
+      assert has_element?(view, "#metric-tile-1 #metric-tile-value-1")
+      assert has_element?(view, "#metric-tile-2 #metric-tile-value-2")
+    end
+
+    test "tiles have a colored left accent border", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Tiles should have a left border using one of our brand colors
+      # Fuchsia (#FF00FF) or Baby Blue (#89CFF0)
+      assert has_element?(view, "#metric-tile-1[style*='border-left']")
+      assert has_element?(view, "#metric-tile-2[style*='border-left']")
+    end
+
+    test "tiles use fuchsia and baby blue accent colors", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # At least one tile should use fuchsia accent
+      assert has_element?(view, "[style*='border-left-color: #FF00FF']")
+
+      # At least one tile should use baby blue accent
+      assert has_element?(view, "[style*='border-left-color: #89CFF0']")
+    end
+
+    test "each tile shows a trend indicator with direction and percentage", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # Each tile should have a trend element
+      assert has_element?(view, "#metric-tile-1 #metric-tile-trend-1")
+      assert has_element?(view, "#metric-tile-2 #metric-tile-trend-2")
+    end
+
+    test "up trends display in green with an up arrow icon", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # At least one tile should have an upward trend arrow
+      assert has_element?(view, "#metric-tile-section .hero-arrow-trending-up")
+    end
+
+    test "down trends display in red with a down arrow icon", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # At least one tile should have a downward trend arrow
+      assert has_element?(view, "#metric-tile-section .hero-arrow-trending-down")
+    end
+
+    test "tiles are arranged in a responsive grid", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # The tiles container should use a grid layout
+      assert has_element?(view, "#metric-tile-grid")
+    end
+
+    test "metric values are displayed with sales-relevant stub data", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      # The first tile should display "Transacting Omni POS" as its name
+      assert has_element?(view, "#metric-tile-name-1", "Transacting Omni POS")
+
+      # The first tile should display a formatted number as its value
+      assert has_element?(view, "#metric-tile-value-1", "593,244")
+    end
+  end
 end
