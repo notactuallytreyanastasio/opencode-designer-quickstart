@@ -15,12 +15,19 @@ defmodule DesignSystemShowoff.Spex.KpiTileSpex do
     {:ok, conn: build_conn()}
   end
 
-  # Stub data plan (matches your reference images):
+  # Stub data plan:
   #
-  # Tile 1: "Active Projects"    | value: "8"   | trend: :up   | subtext: "+2 this week"    | border: #22c55e (green)
-  # Tile 2: "Total Opportunity"  | value: "$46M" | trend: :down | subtext: "2% identified"   | border: #ef4444 (red)
-  # Tile 3: "Active Scenarios"   | value: "12"  | trend: :up   | subtext: "+8 this week"    | border: #3b82f6 (blue)
-  # Tile 4: "Applied to Budget"  | value: "8"   | no trend     | no subtext                 | no border color
+  # Row 1 — with custom border colors:
+  # Tile 1: "Active Projects"    | value: "8"    | trend: :up   | subtext: "+2 this week"       | border: #22c55e (green)
+  # Tile 2: "Total Opportunity"  | value: "$46M" | trend: :down | subtext: "2% identified"      | border: #ef4444 (red)
+  # Tile 3: "Active Scenarios"   | value: "12"   | trend: nil   | subtext: "of 12 completed"    | border: #3b82f6 (blue)
+  # Tile 4: "Applied to Budget"  | value: "8"    | no trend     | no subtext                    | no border color
+  #
+  # Row 2 — no border colors (all default borders):
+  # Tile 5: "Win Rate"           | value: "34%"    | trend: :up   | subtext: "+5% vs last quarter" | no border
+  # Tile 6: "Pipeline Value"     | value: "$12.8M" | trend: :down | subtext: "-$1.2M this month"   | no border
+  # Tile 7: "Avg Deal Size"      | value: "$285K"  | trend: nil   | subtext: "across 45 deals"     | no border
+  # Tile 8: "Days to Close"      | value: "42"     | trend: nil   | no subtext                     | no border
 
   spex "KPI Tile displays key metrics with optional trend arrows and subtext" do
     # -- Core Display --
@@ -175,6 +182,25 @@ defmodule DesignSystemShowoff.Spex.KpiTileSpex do
       end
     end
 
+    # -- Drop Shadow --
+
+    scenario "every tile has a 4px drop shadow", context do
+      given_ "the showcase page is loaded", context do
+        {:ok, view, _html} = live(context.conn, ~p"/showcase")
+        Map.put(context, :view, view)
+      end
+
+      then_ "a tile with a custom border has the shadow style", context do
+        assert has_element?(context.view, "#kpi-tile-1[style*='box-shadow']")
+        context
+      end
+
+      and_ "a tile without a custom border also has the shadow style", context do
+        assert has_element?(context.view, "#kpi-tile-4[style*='box-shadow']")
+        context
+      end
+    end
+
     # -- Border Customization --
 
     scenario "full border accepts a custom color", context do
@@ -198,6 +224,132 @@ defmodule DesignSystemShowoff.Spex.KpiTileSpex do
       then_ "the tile renders without an inline border-color style", context do
         assert has_element?(context.view, "#kpi-tile-4")
         refute has_element?(context.view, "#kpi-tile-4[style*='border-color']")
+        context
+      end
+    end
+
+    # -- Second Row: Borderless Tiles --
+
+    scenario "second row tile 5 renders with trend up and no border", context do
+      given_ "the showcase page is loaded", context do
+        {:ok, view, _html} = live(context.conn, ~p"/showcase")
+        Map.put(context, :view, view)
+      end
+
+      then_ "tile 5 shows Win Rate title and value", context do
+        assert has_element?(context.view, "#kpi-tile-5-title", "Win Rate")
+        assert has_element?(context.view, "#kpi-tile-5-value", "34%")
+        context
+      end
+
+      and_ "tile 5 has an upward trend arrow", context do
+        assert has_element?(context.view, "#kpi-tile-5-trend .text-success")
+        context
+      end
+
+      and_ "tile 5 shows its subtext", context do
+        assert has_element?(context.view, "#kpi-tile-5-subtext", "+5% vs last quarter")
+        context
+      end
+
+      and_ "tile 5 has no custom border color", context do
+        refute has_element?(context.view, "#kpi-tile-5[style*='border-color']")
+        context
+      end
+    end
+
+    scenario "second row tile 6 renders with trend down and no border", context do
+      given_ "the showcase page is loaded", context do
+        {:ok, view, _html} = live(context.conn, ~p"/showcase")
+        Map.put(context, :view, view)
+      end
+
+      then_ "tile 6 shows Pipeline Value title and value", context do
+        assert has_element?(context.view, "#kpi-tile-6-title", "Pipeline Value")
+        assert has_element?(context.view, "#kpi-tile-6-value", "$12.8M")
+        context
+      end
+
+      and_ "tile 6 has a downward trend arrow", context do
+        assert has_element?(context.view, "#kpi-tile-6-trend .text-error")
+        context
+      end
+
+      and_ "tile 6 shows its subtext in red", context do
+        assert has_element?(context.view, "#kpi-tile-6-subtext.text-error", "-$1.2M this month")
+        context
+      end
+    end
+
+    scenario "second row tile 7 renders with subtext but no trend", context do
+      given_ "the showcase page is loaded", context do
+        {:ok, view, _html} = live(context.conn, ~p"/showcase")
+        Map.put(context, :view, view)
+      end
+
+      then_ "tile 7 shows Avg Deal Size title and value", context do
+        assert has_element?(context.view, "#kpi-tile-7-title", "Avg Deal Size")
+        assert has_element?(context.view, "#kpi-tile-7-value", "$285K")
+        context
+      end
+
+      and_ "tile 7 has no trend arrow", context do
+        refute has_element?(context.view, "#kpi-tile-7-trend")
+        context
+      end
+
+      and_ "tile 7 shows neutral subtext", context do
+        assert has_element?(
+                 context.view,
+                 "#kpi-tile-7-subtext.text-base-content\\/60",
+                 "across 45 deals"
+               )
+
+        context
+      end
+    end
+
+    scenario "second row tile 8 is the most minimal — no trend, no subtext, no border", context do
+      given_ "the showcase page is loaded", context do
+        {:ok, view, _html} = live(context.conn, ~p"/showcase")
+        Map.put(context, :view, view)
+      end
+
+      then_ "tile 8 shows Days to Close title and value", context do
+        assert has_element?(context.view, "#kpi-tile-8-title", "Days to Close")
+        assert has_element?(context.view, "#kpi-tile-8-value", "42")
+        context
+      end
+
+      and_ "tile 8 has no trend arrow", context do
+        refute has_element?(context.view, "#kpi-tile-8-trend")
+        context
+      end
+
+      and_ "tile 8 has no subtext", context do
+        refute has_element?(context.view, "#kpi-tile-8-subtext")
+        context
+      end
+
+      and_ "tile 8 has no custom border color", context do
+        refute has_element?(context.view, "#kpi-tile-8[style*='border-color']")
+        context
+      end
+    end
+
+    scenario "every second-row tile also has a drop shadow", context do
+      given_ "the showcase page is loaded", context do
+        {:ok, view, _html} = live(context.conn, ~p"/showcase")
+        Map.put(context, :view, view)
+      end
+
+      then_ "tile 5 has the shadow style", context do
+        assert has_element?(context.view, "#kpi-tile-5[style*='box-shadow']")
+        context
+      end
+
+      and_ "tile 8 has the shadow style too", context do
+        assert has_element?(context.view, "#kpi-tile-8[style*='box-shadow']")
         context
       end
     end
