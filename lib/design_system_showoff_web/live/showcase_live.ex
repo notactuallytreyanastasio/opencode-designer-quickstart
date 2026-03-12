@@ -1,11 +1,11 @@
 defmodule DesignSystemShowoffWeb.ShowcaseLive do
   use DesignSystemShowoffWeb, :live_view
 
-  import DesignSystemShowoffWeb.Components.MetricTile
   import DesignSystemShowoffWeb.Components.CalendarDatepicker
   import DesignSystemShowoffWeb.Components.LoadingButton
   import DesignSystemShowoffWeb.Components.ProductSearchBar
   import DesignSystemShowoffWeb.Components.DataTable
+  import DesignSystemShowoffWeb.Components.KpiTile
 
   @stub_table_data [
     %{id: 1, name: "Alice Johnson", role: "Designer", status: "Active"},
@@ -15,38 +15,38 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
     %{id: 5, name: "Eve Davis", role: "Developer", status: "Active"}
   ]
 
-  @stub_metrics [
+  @stub_kpi_tiles [
     %{
       id: 1,
-      name: "Transacting Omni POS",
-      value: 593_244,
+      title: "Active Projects",
+      value: "8",
       trend: :up,
-      trend_pct: 12.5,
-      accent_color: "#FF00FF"
+      subtext: "+2 this week",
+      border_color: "#22c55e"
     },
     %{
       id: 2,
-      name: "Monthly Revenue",
-      value: 1_284_930,
-      trend: :up,
-      trend_pct: 8.3,
-      accent_color: "#89CFF0"
+      title: "Total Opportunity",
+      value: "$46M",
+      trend: :down,
+      subtext: "2% identified",
+      border_color: "#ef4444"
     },
     %{
       id: 3,
-      name: "Avg. Order Value",
-      value: 74,
-      trend: :down,
-      trend_pct: 3.1,
-      accent_color: "#FF00FF"
+      title: "Active Scenarios",
+      value: "12",
+      trend: nil,
+      subtext: "of 12 completed",
+      border_color: "#3b82f6"
     },
     %{
       id: 4,
-      name: "Returns Processed",
-      value: 2_847,
-      trend: :down,
-      trend_pct: 5.7,
-      accent_color: "#89CFF0"
+      title: "Applied to Budget",
+      value: "8",
+      trend: nil,
+      subtext: nil,
+      border_color: nil
     }
   ]
 
@@ -74,7 +74,7 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
       |> assign(:calendar_weeks, calendar_weeks(Date.beginning_of_month(today)))
       |> assign(:loading, false)
       |> assign(:table_data, @stub_table_data)
-      |> assign(:metrics, @stub_metrics)
+      |> assign(:kpi_tiles, @stub_kpi_tiles)
       |> assign(:grocery_items, @stub_grocery_items)
       |> assign(:search_query, "")
       |> assign(:search_suggestions, [])
@@ -185,21 +185,20 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
           </p>
         </div>
 
-        <%!-- Metric Tile Section --%>
-        <section id="metric-tile-section" class="space-y-4">
+        <%!-- KPI Tile Section --%>
+        <section id="kpi-tile-section" class="space-y-4">
           <h2 class="text-xl font-semibold border-b border-base-300 pb-2">
-            Metric Tiles
+            KPI Tiles
           </h2>
-          <div id="metric-tile-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <.metric_tile
-              :for={metric <- @metrics}
-              id={"metric-tile-#{metric.id}"}
-              item_id={metric.id}
-              name={metric.name}
-              value={metric.value}
-              trend={metric.trend}
-              trend_pct={metric.trend_pct}
-              accent_color={metric.accent_color}
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <.kpi_tile
+              :for={tile <- @kpi_tiles}
+              id={"kpi-tile-#{tile.id}"}
+              title={tile.title}
+              value={tile.value}
+              trend={tile.trend}
+              subtext={tile.subtext}
+              border_color={tile.border_color}
             />
           </div>
         </section>
