@@ -4,13 +4,14 @@ defmodule DesignSystemShowoffWeb.ShowcaseLiveTest do
   import Phoenix.LiveViewTest
 
   describe "ShowcaseLive page structure" do
-    test "renders the showcase page with all 4 component sections", %{conn: conn} do
+    test "renders the showcase page with all 5 component sections", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/showcase")
 
       # The page should have a title/header
       assert has_element?(view, "#showcase-page")
 
-      # All 4 component sections should be present
+      # All 5 component sections should be present
+      assert has_element?(view, "#kpi-tile-section")
       assert has_element?(view, "#datepicker-section")
       assert has_element?(view, "#loading-button-section")
       assert has_element?(view, "#product-search-bar-section")
@@ -304,6 +305,61 @@ defmodule DesignSystemShowoffWeb.ShowcaseLiveTest do
 
       # Status values should be rendered as badges
       assert has_element?(view, "#data-table .badge")
+    end
+  end
+
+  describe "KPI Tile" do
+    test "renders the kpi tile section", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#kpi-tile-section")
+    end
+
+    test "renders all 8 KPI tiles across two rows", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      for i <- 1..8 do
+        assert has_element?(view, "#kpi-tile-#{i}")
+      end
+    end
+
+    test "each tile displays a title and value", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#kpi-tile-1-title", "Active Projects")
+      assert has_element?(view, "#kpi-tile-1-value", "8")
+    end
+
+    test "tiles with trends show arrow icons", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#kpi-tile-1-trend .text-success")
+      assert has_element?(view, "#kpi-tile-2-trend .text-error")
+    end
+
+    test "tiles without trends have no trend element", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      refute has_element?(view, "#kpi-tile-4-trend")
+    end
+
+    test "every tile has a drop shadow", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#kpi-tile-1[style*='box-shadow']")
+      assert has_element?(view, "#kpi-tile-5[style*='box-shadow']")
+    end
+
+    test "row 1 tiles can have custom border colors", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      assert has_element?(view, "#kpi-tile-1[style*='border-color: #22c55e']")
+    end
+
+    test "row 2 tiles have no custom border color", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/showcase")
+
+      refute has_element?(view, "#kpi-tile-5[style*='border-color']")
     end
   end
 end

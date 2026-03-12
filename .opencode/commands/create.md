@@ -52,30 +52,77 @@ Add a new `describe` block to `test/design_system_showoff_web/live/showcase_live
 Run the tests: `mix test test/design_system_showoff_web/live/showcase_live_test.exs`
 They should **FAIL** (red phase). This is correct and expected.
 
-## Step 2.5: Design Review -- STOP AND ASK
+## Step 2.5: Design Review -- ASSERTION DIALOGUE
 
-**Do NOT proceed to implementation yet.** The failing tests are the design spec. Present them
-to the designer in plain language so they can validate the intent before you build anything.
+**Do NOT proceed to implementation yet.** The failing tests are the design spec. Walk through
+each test assertion ONE AT A TIME with the designer, turning each into a conversation that
+refines the component's design.
 
-Summarize what the tests assert as a checklist. For example:
+### How the dialogue works
 
-> Here's what I'm planning to build for **$ARGUMENTS**:
+For each test you wrote, present the assertion as a plain-language statement and ask the
+designer to react. Go in this order:
+
+**1. Start with the basics (existence & structure)**
+
+> **Assertion 1:** "$ARGUMENTS will have its own section on the showcase page."
 >
-> - It will have a section on the showcase page
-> - It will show [describe initial visual state]
-> - When you [interaction], it will [outcome]
-> - When you [interaction], it will [outcome]
-> - It will use these DaisyUI styles: [list key classes]
+> Does this need a title? A description? Any special layout container?
+
+Wait for the designer to respond. Update the test if they refine it.
+
+**2. Walk through main use cases (initial state & core interactions)**
+
+For each core behavior test, present it as:
+
+> **Assertion N:** "When the user [does X], the component will [do Y]."
 >
-> **Does this match what you have in mind? Want to add, remove, or change anything?**
+> Is this the main use case you're imagining? What should the user see before they interact?
+> What happens right after?
 
-**Wait for the designer to respond.** This is a hard stop -- do not continue until they confirm.
+Wait for each response. This is where designers often discover:
+- Missing intermediate states ("oh, it should show a loading state first")
+- Unclear transitions ("actually it should animate, not just appear")
+- Implicit assumptions ("I assumed it would reset when you click away")
 
-If the designer wants changes:
-1. Update the tests to match their feedback
-2. Re-run to confirm they still fail (red)
-3. Present the updated checklist again
-4. Repeat until the designer says "looks good" / "yes" / "go for it"
+**3. Probe for edge cases**
+
+After covering the main use cases, explicitly ask:
+
+> We've covered the happy path. Let me ask about some edges:
+> - What happens when [empty state / no data]?
+> - What happens when [too many items / overflow]?
+> - What happens when [user double-clicks / rapid interaction]?
+> - What happens on [mobile / small viewport]?
+>
+> Any of these worth capturing as assertions?
+
+Add tests for any edge cases the designer cares about.
+
+**4. Confirm styling intent**
+
+> **Styling:** This will use these DaisyUI classes: [list key classes].
+>
+> Does this feel right for the visual weight and hierarchy you want?
+
+**5. Recap the full assertion list**
+
+Once all assertions are discussed individually, present the final compiled list:
+
+> Here's the complete set of assertions for **$ARGUMENTS**:
+>
+> 1. [assertion]
+> 2. [assertion]
+> ...
+>
+> **All good? Or want to adjust anything before I lock these in?**
+
+### Iteration rules
+
+- If the designer changes their mind on a previous assertion, update that test immediately
+- Re-run tests after changes to confirm they still fail (red)
+- Don't rush -- the whole point is to help the designer think through the design thoroughly
+- Only proceed when the designer explicitly confirms the final list
 
 Once confirmed, checkpoint the tests:
 ```
@@ -85,20 +132,36 @@ git commit -m "test: add failing tests for $ARGUMENTS component"
 
 ## Step 3: Build the component
 
-Add the component to `lib/design_system_showoff_web/live/showcase_live.ex`:
+### 3a: Create the function component module
 
-- Add any new assigns in `mount/3`
-- Add `handle_event` clauses for interactions
-- Add the template section inside `#showcase-page` div
-- Use **stub data only** -- define it as a module attribute like `@stub_table_data`
+Create a new file at `lib/design_system_showoff_web/components/$ARGUMENTS.ex`:
+
+- Define a module: `DesignSystemShowoffWeb.Components.<PascalName>`
+- `use Phoenix.Component`
+- Declare every prop with `attr` — include type, required/optional, defaults, and allowed values
+- Use `slot` for any composable content areas
+- Define the component function (e.g., `def metric_tile(assigns)`) with HEEx markup
 - Use DaisyUI classes from the theme (see `.opencode/design-tokens.md`)
 - Every interactive element MUST have a unique DOM `id`
+- Keep the component **stateless** — no `handle_event` here, use `phx-click` attrs that the parent handles
+
+### 3b: Wire it into the showcase page
+
+Update `lib/design_system_showoff_web/live/showcase_live.ex`:
+
+- `import DesignSystemShowoffWeb.Components.<PascalName>` at the top
+- Add any new assigns in `mount/3`
+- Add `handle_event` clauses for interactions
+- Add a section in the `render/1` template that CALLS the component (e.g., `<.component_name ... />`)
+- Use **stub data only** — define it as a module attribute like `@stub_table_data`
+- The showcase page should NOT contain raw component markup — only `<.component_name />` calls
 
 Run the tests again: `mix test test/design_system_showoff_web/live/showcase_live_test.exs`
 They should **PASS** (green phase).
 
 **Checkpoint**: commit the implementation:
 ```
+git add lib/design_system_showoff_web/components/$ARGUMENTS.ex
 git add lib/design_system_showoff_web/live/showcase_live.ex
 git commit -m "feat: add $ARGUMENTS component to showcase"
 ```
@@ -154,7 +217,8 @@ git commit -m "chore: register $ARGUMENTS in design system living memory"
 
 - **PROTECT MAIN** -- never commit to main/master, always use a branch
 - **STUB DATA ONLY** -- no Ecto schemas, no migrations, no real backend
-- **SINGLE LIVEVIEW** -- everything goes in `ShowcaseLive`
+- **FUNCTION COMPONENTS** -- every component gets its own module in `components/` with `attr`/`slot` declarations; showcase page only calls them
+- **SINGLE LIVEVIEW** -- state management stays in `ShowcaseLive`, components are stateless
 - **DAISY UI** -- use only DaisyUI classes from the existing themes
 - **UNIQUE IDS** -- every interactive element needs a unique DOM id
 - **TEST FIRST** -- tests must exist and fail before the component code is written

@@ -1,12 +1,88 @@
 defmodule DesignSystemShowoffWeb.ShowcaseLive do
   use DesignSystemShowoffWeb, :live_view
 
+  import DesignSystemShowoffWeb.Components.CalendarDatepicker
+  import DesignSystemShowoffWeb.Components.LoadingButton
+  import DesignSystemShowoffWeb.Components.ProductSearchBar
+  import DesignSystemShowoffWeb.Components.DataTable
+  import DesignSystemShowoffWeb.Components.KpiTile
+
   @stub_table_data [
     %{id: 1, name: "Alice Johnson", role: "Designer", status: "Active"},
     %{id: 2, name: "Bob Smith", role: "Developer", status: "Away"},
     %{id: 3, name: "Carol White", role: "PM", status: "Active"},
     %{id: 4, name: "Dan Brown", role: "Designer", status: "Offline"},
     %{id: 5, name: "Eve Davis", role: "Developer", status: "Active"}
+  ]
+
+  @stub_kpi_tiles [
+    %{
+      id: 1,
+      title: "Active Projects",
+      value: "8",
+      trend: :up,
+      subtext: "+2 this week",
+      border_color: "#22c55e"
+    },
+    %{
+      id: 2,
+      title: "Total Opportunity",
+      value: "$46M",
+      trend: :down,
+      subtext: "2% identified",
+      border_color: "#ef4444"
+    },
+    %{
+      id: 3,
+      title: "Active Scenarios",
+      value: "12",
+      trend: nil,
+      subtext: "of 12 completed",
+      border_color: "#3b82f6"
+    },
+    %{
+      id: 4,
+      title: "Applied to Budget",
+      value: "8",
+      trend: nil,
+      subtext: nil,
+      border_color: nil
+    }
+  ]
+
+  @stub_kpi_tiles_row2 [
+    %{
+      id: 5,
+      title: "Win Rate",
+      value: "34%",
+      trend: :up,
+      subtext: "+5% vs last quarter",
+      border_color: nil
+    },
+    %{
+      id: 6,
+      title: "Pipeline Value",
+      value: "$12.8M",
+      trend: :down,
+      subtext: "-$1.2M this month",
+      border_color: nil
+    },
+    %{
+      id: 7,
+      title: "Avg Deal Size",
+      value: "$285K",
+      trend: nil,
+      subtext: "across 45 deals",
+      border_color: nil
+    },
+    %{
+      id: 8,
+      title: "Days to Close",
+      value: "42",
+      trend: nil,
+      subtext: nil,
+      border_color: nil
+    }
   ]
 
   @stub_grocery_items [
@@ -33,6 +109,8 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
       |> assign(:calendar_weeks, calendar_weeks(Date.beginning_of_month(today)))
       |> assign(:loading, false)
       |> assign(:table_data, @stub_table_data)
+      |> assign(:kpi_tiles, @stub_kpi_tiles)
+      |> assign(:kpi_tiles_row2, @stub_kpi_tiles_row2)
       |> assign(:grocery_items, @stub_grocery_items)
       |> assign(:search_query, "")
       |> assign(:search_suggestions, [])
@@ -143,79 +221,46 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
           </p>
         </div>
 
+        <%!-- KPI Tile Section --%>
+        <section id="kpi-tile-section" class="space-y-4">
+          <h2 class="text-xl font-semibold border-b border-base-300 pb-2">
+            KPI Tiles
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <.kpi_tile
+              :for={tile <- @kpi_tiles}
+              id={"kpi-tile-#{tile.id}"}
+              title={tile.title}
+              value={tile.value}
+              trend={tile.trend}
+              subtext={tile.subtext}
+              border_color={tile.border_color}
+            />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <.kpi_tile
+              :for={tile <- @kpi_tiles_row2}
+              id={"kpi-tile-#{tile.id}"}
+              title={tile.title}
+              value={tile.value}
+              trend={tile.trend}
+              subtext={tile.subtext}
+              border_color={tile.border_color}
+            />
+          </div>
+        </section>
+
         <%!-- Datepicker Section --%>
         <section id="datepicker-section" class="space-y-4">
           <h2 class="text-xl font-semibold border-b border-base-300 pb-2">
             Calendar Datepicker
           </h2>
-          <div id="datepicker" class="card bg-base-200 shadow-lg">
-            <div class="card-body">
-              <%!-- Month Navigation --%>
-              <div class="flex items-center justify-between mb-4">
-                <button
-                  id="datepicker-prev-month"
-                  phx-click="prev-month"
-                  class="btn btn-ghost btn-sm btn-circle"
-                >
-                  <.icon name="hero-chevron-left" class="size-5" />
-                </button>
-                <span id="datepicker-month-label" class="text-lg font-semibold">
-                  {Calendar.strftime(@current_month, "%B %Y")}
-                </span>
-                <button
-                  id="datepicker-next-month"
-                  phx-click="next-month"
-                  class="btn btn-ghost btn-sm btn-circle"
-                >
-                  <.icon name="hero-chevron-right" class="size-5" />
-                </button>
-              </div>
-
-              <%!-- Weekday Headers --%>
-              <div id="datepicker-weekday-headers" class="grid grid-cols-7 gap-1 text-center mb-2">
-                <div
-                  :for={day <- ~w(Sun Mon Tue Wed Thu Fri Sat)}
-                  class="text-xs font-medium text-base-content/50"
-                >
-                  {day}
-                </div>
-              </div>
-
-              <%!-- Calendar Grid --%>
-              <div id="datepicker-grid" class="grid grid-cols-7 gap-1">
-                <%= for week <- @calendar_weeks do %>
-                  <%= for day <- week do %>
-                    <%= if day do %>
-                      <button
-                        id={"datepicker-day-#{day}"}
-                        phx-click="select-date"
-                        phx-value-date={Date.to_iso8601(day)}
-                        class={[
-                          "btn btn-sm btn-ghost",
-                          day == Date.utc_today() && "btn-outline btn-primary",
-                          @selected_date == day && "btn-active btn-primary",
-                          day.month != @current_month.month && "opacity-30"
-                        ]}
-                      >
-                        {day.day}
-                      </button>
-                    <% else %>
-                      <div></div>
-                    <% end %>
-                  <% end %>
-                <% end %>
-              </div>
-
-              <%!-- Selected Date Display --%>
-              <div
-                :if={@selected_date}
-                id="datepicker-selected-date"
-                class="mt-4 text-center text-sm font-medium text-primary"
-              >
-                {Calendar.strftime(@selected_date, "%B %d, %Y")}
-              </div>
-            </div>
-          </div>
+          <.calendar_datepicker
+            id="datepicker"
+            current_month={@current_month}
+            selected_date={@selected_date}
+            calendar_weeks={@calendar_weeks}
+          />
         </section>
 
         <%!-- Loading Button Section --%>
@@ -223,36 +268,7 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
           <h2 class="text-xl font-semibold border-b border-base-300 pb-2">
             Loading Button
           </h2>
-          <div class="card bg-base-200 shadow-lg">
-            <div class="card-body flex flex-row items-center gap-4">
-              <button
-                id="loading-button"
-                phx-click="start-loading"
-                class={[
-                  "btn btn-primary",
-                  @loading && "btn-disabled"
-                ]}
-                disabled={@loading}
-              >
-                <span
-                  :if={@loading}
-                  id="loading-button-spinner"
-                  class="loading loading-spinner loading-sm"
-                >
-                </span>
-                {if @loading, do: "Loading", else: "Submit"}
-              </button>
-
-              <button
-                :if={@loading}
-                id="loading-button-reset"
-                phx-click="reset-loading"
-                class="btn btn-ghost btn-sm"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
+          <.loading_button id="loading-button" loading={@loading} />
         </section>
 
         <%!-- Product Search Bar Section --%>
@@ -260,79 +276,13 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
           <h2 class="text-xl font-semibold border-b border-base-300 pb-2">
             Product Search Bar
           </h2>
-          <div class="card bg-base-200 shadow-lg">
-            <div class="card-body">
-              <div
-                id="product-search-bar"
-                class="relative flex items-center gap-2 rounded-lg px-3 py-2 min-h-[44px]"
-                style="background-color: #FF00FF"
-              >
-                <%!-- Search Icon --%>
-                <span id="product-search-bar-icon" class="shrink-0">
-                  <.icon name="hero-magnifying-glass" class="size-5 text-white" />
-                </span>
-
-                <%!-- Pills + Input area --%>
-                <div
-                  id="product-search-bar-pills"
-                  class="flex flex-wrap items-center gap-1.5 flex-1 min-w-0"
-                >
-                  <%!-- Selected product pills --%>
-                  <span
-                    :for={product <- @selected_products}
-                    id={"product-search-bar-pill-#{product.id}"}
-                    class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium text-gray-900"
-                    style="background-color: #89CFF0"
-                  >
-                    {product.name}
-                    <button
-                      id={"product-search-bar-remove-#{product.id}"}
-                      phx-click="remove-product"
-                      phx-value-id={product.id}
-                      type="button"
-                      class="ml-0.5 inline-flex items-center justify-center size-4 rounded-full hover:bg-black/10 cursor-pointer"
-                    >
-                      <.icon name="hero-x-mark" class="size-3" />
-                    </button>
-                  </span>
-
-                  <%!-- Search input --%>
-                  <input
-                    id="product-search-bar-input"
-                    type="text"
-                    placeholder="Search grocery items..."
-                    value={@search_query}
-                    phx-keyup="search-products"
-                    autocomplete="off"
-                    class="flex-1 min-w-[120px] bg-transparent border-none outline-none text-white placeholder-white/60 text-sm focus:ring-0 p-0"
-                  />
-                </div>
-
-                <%!-- Filter Icon --%>
-                <span id="product-search-bar-filter-icon" class="shrink-0">
-                  <.icon name="hero-funnel" class="size-5 text-white" />
-                </span>
-
-                <%!-- Autocomplete Dropdown --%>
-                <div
-                  :if={@show_dropdown}
-                  id="product-search-bar-dropdown"
-                  class="absolute left-0 right-0 top-full mt-1 bg-base-100 rounded-lg shadow-lg border border-base-300 z-50 max-h-60 overflow-y-auto"
-                >
-                  <button
-                    :for={suggestion <- @search_suggestions}
-                    id={"product-search-bar-suggestion-#{suggestion.id}"}
-                    phx-click="select-product"
-                    phx-value-id={suggestion.id}
-                    type="button"
-                    class="w-full text-left px-4 py-2 text-sm hover:bg-base-200 cursor-pointer transition-colors first:rounded-t-lg last:rounded-b-lg"
-                  >
-                    {suggestion.name}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <.product_search_bar
+            id="product-search-bar"
+            search_query={@search_query}
+            selected_products={@selected_products}
+            search_suggestions={@search_suggestions}
+            show_dropdown={@show_dropdown}
+          />
         </section>
 
         <%!-- Data Table Section --%>
@@ -340,31 +290,19 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
           <h2 class="text-xl font-semibold border-b border-base-300 pb-2">
             Data Table
           </h2>
-          <div class="card bg-base-200 shadow-lg overflow-x-auto">
-            <table id="data-table" class="table table-zebra">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr :for={row <- @table_data} id={"data-table-row-#{row.id}"}>
-                  <td class="font-medium">{row.name}</td>
-                  <td>{row.role}</td>
-                  <td>
-                    <span class={[
-                      "badge",
-                      badge_class(row.status)
-                    ]}>
-                      {row.status}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <.data_table id="data-table" rows={@table_data}>
+            <:col :let={row} key={:name} label="Name">
+              <span class="font-medium">{row.name}</span>
+            </:col>
+            <:col :let={row} key={:role} label="Role">
+              {row.role}
+            </:col>
+            <:col :let={row} key={:status} label="Status">
+              <span class={["badge", badge_class(row.status)]}>
+                {row.status}
+              </span>
+            </:col>
+          </.data_table>
         </section>
       </div>
     </Layouts.app>
@@ -381,12 +319,9 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
   defp calendar_weeks(first_of_month) do
     last_of_month = Date.end_of_month(first_of_month)
 
-    # Day of week: 1 = Monday ... 7 = Sunday
-    # We want Sunday = 0 for our grid
     start_dow = Date.day_of_week(first_of_month, :sunday) - 1
     end_dow = Date.day_of_week(last_of_month, :sunday) - 1
 
-    # Build list of days with leading/trailing nils for alignment
     leading_nils = List.duplicate(nil, start_dow)
     trailing_nils = List.duplicate(nil, 6 - end_dow)
 
