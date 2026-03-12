@@ -74,28 +74,74 @@ Modify the relevant `describe` block in `test/design_system_showoff_web/live/sho
 Run: `mix test test/design_system_showoff_web/live/showcase_live_test.exs`
 The new/changed tests should **FAIL** (red phase). Existing unchanged tests should still pass.
 
-## Step 3.5: Design Review -- STOP AND ASK
+## Step 3.5: Design Review -- ASSERTION DIALOGUE
 
-**Do NOT proceed to implementation yet.** The failing tests define the change. Present them
-to the designer in plain language so they can validate before you touch the component code.
+**Do NOT proceed to implementation yet.** The failing tests define the change. Walk through
+each NEW or CHANGED test assertion ONE AT A TIME with the designer, turning each into a
+conversation that sharpens the update.
 
-Summarize what will change as a checklist. For example:
+### How the dialogue works
 
-> Here's what I'm planning to change on **$ARGUMENTS**:
+**1. Anchor on what exists (unchanged assertions)**
+
+> These existing behaviors stay the same -- I won't touch them:
+> - [existing assertion 1]
+> - [existing assertion 2]
 >
-> - [New behavior / visual change described in plain English]
-> - [Another change]
-> - Existing behavior that stays the same: [list unchanged tests]
+> Anything here that should ALSO change while we're at it?
+
+Wait for the designer. They may realize adjacent behaviors need updating too.
+
+**2. Walk through each change one at a time**
+
+For each new or modified test, present it as a plain-language assertion:
+
+> **Changed assertion:** "[Old behavior]" → "[New behavior]"
 >
-> **Does this match what you want? Anything to add or adjust?**
+> Is this the change you had in mind? What should the transition feel like?
 
-**Wait for the designer to respond.** Do not continue until they confirm.
+Or for net-new tests:
 
-If the designer wants changes:
-1. Update the tests to match their feedback
-2. Re-run to confirm the new/changed tests still fail (red) and existing tests still pass
-3. Present the updated checklist again
-4. Repeat until confirmed
+> **New assertion:** "When the user [does X], the component will [do Y]."
+>
+> Is this the main thing you want to add? What should the user see before and after?
+
+Wait for each response. This is where designers often discover:
+- Side effects on existing behavior ("wait, if we add that, does the hover state still work?")
+- Missing transitions ("it should fade, not just swap")
+- Scope creep they want to defer ("let's save that for a separate update")
+
+**3. Probe for edge cases around the changes**
+
+> Now that we've changed [X], let me ask about edges:
+> - Does this change affect [related interaction]?
+> - What happens when [boundary condition for the new behavior]?
+> - Should the old behavior still work as a fallback?
+>
+> Worth adding any of these as assertions?
+
+Add tests for any edge cases the designer cares about.
+
+**4. Recap: what's changing vs. what's staying**
+
+> Here's the final picture for **$ARGUMENTS**:
+>
+> **Unchanged (still passing):**
+> 1. [existing assertion]
+> ...
+>
+> **New/Changed (currently failing, will be implemented):**
+> 1. [new assertion]
+> ...
+>
+> **All good? Or want to adjust anything before I start implementing?**
+
+### Iteration rules
+
+- If the designer changes their mind on a previous assertion, update that test immediately
+- Re-run tests after changes: new/changed tests should fail (red), unchanged tests should pass
+- Don't rush -- the whole point is to help the designer think through the impact of changes
+- Only proceed when the designer explicitly confirms the final list
 
 Once confirmed, checkpoint the tests:
 ```
@@ -105,17 +151,28 @@ git commit -m "test: update tests for $ARGUMENTS changes"
 
 ## Step 4: Update the component
 
-Modify the component in `lib/design_system_showoff_web/live/showcase_live.ex`:
+### 4a: Update the function component module
 
-- Update assigns in `mount/3` if needed
-- Add/modify `handle_event` clauses
-- Update the template section
+Modify the component in `lib/design_system_showoff_web/components/$ARGUMENTS.ex`:
+
+- Add/remove/change `attr` or `slot` declarations as needed
+- Update the HEEx markup in the component function
+- Keep the component stateless — interaction events are handled by the parent
+
+### 4b: Update the showcase page if needed
+
+Modify `lib/design_system_showoff_web/live/showcase_live.ex` if the change affects:
+
+- Assigns in `mount/3` (new props, changed stub data)
+- Event handlers (`handle_event` clauses)
+- How the component is called in the template (new attrs passed)
 - Keep stub data -- no real backend
 
 Run tests again: ALL tests should **PASS** (green phase) -- both the updated ones and all others.
 
 **Checkpoint**: commit the implementation:
 ```
+git add lib/design_system_showoff_web/components/$ARGUMENTS.ex
 git add lib/design_system_showoff_web/live/showcase_live.ex
 git commit -m "feat: update $ARGUMENTS component"
 ```
@@ -172,7 +229,8 @@ git commit -m "chore: update $ARGUMENTS in design system living memory"
 - **PROTECT MAIN** -- never commit to main/master, always use a branch
 - **SINGLE TOPIC** -- one update per branch, don't let scope creep
 - **STUB DATA ONLY** -- no new Ecto schemas or migrations
-- **SINGLE LIVEVIEW** -- modifications stay in `ShowcaseLive`
+- **FUNCTION COMPONENTS** -- update the component module in `components/`; the showcase page only calls components
+- **SINGLE LIVEVIEW** -- state management stays in `ShowcaseLive`, components are stateless
 - **DON'T BREAK OTHERS** -- other components must still pass their tests
 - **TEST FIRST** -- update tests before updating code
 - **UPDATE THE DB** -- always update the living memory row after changes

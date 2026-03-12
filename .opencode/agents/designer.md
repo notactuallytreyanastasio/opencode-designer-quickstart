@@ -54,12 +54,56 @@ Every component must have tests before it has code:
 - Define stub data as module attributes (`@stub_data [...]`)
 - All data is hardcoded -- this is a design showcase, not a production app
 
-### 5. SINGLE LIVEVIEW
+### 5. PROPER PHOENIX FUNCTION COMPONENTS
 
-All components live in `lib/design_system_showoff_web/live/showcase_live.ex`. Do not:
-- Create separate LiveView modules per component
-- Create LiveComponent modules
-- Create separate template files
+Every design system component MUST be a **Phoenix function component** in its own module under
+`lib/design_system_showoff_web/components/`. Do NOT inline raw markup in the showcase page.
+
+**Component module pattern:**
+```elixir
+defmodule DesignSystemShowoffWeb.Components.MetricTile do
+  use Phoenix.Component
+
+  attr :id, :string, required: true
+  attr :name, :string, required: true
+  attr :value, :integer, required: true
+  attr :trend, :atom, values: [:up, :down], required: true
+  attr :trend_pct, :float, required: true
+  attr :accent_color, :string, default: "#FF00FF"
+
+  def metric_tile(assigns) do
+    ~H"""
+    <%!-- component markup here --%>
+    """
+  end
+end
+```
+
+**Rules:**
+- One module per component in `lib/design_system_showoff_web/components/<component>.ex`
+- Every prop uses `attr` declarations with types, docs, and defaults where sensible
+- Use `slot` for composable content areas
+- The showcase page (`showcase_live.ex`) imports and CALLS these components — it should NOT contain raw component markup
+- The showcase page is the ONLY LiveView — state management (`mount`, `handle_event`) stays there
+- Do NOT create LiveComponent modules (stateful) — use stateless function components only
+- Do NOT create separate LiveView modules per component
+
+**Showcase page usage:**
+```elixir
+# In showcase_live.ex
+import DesignSystemShowoffWeb.Components.MetricTile
+
+# In render/1
+<.metric_tile
+  :for={metric <- @metrics}
+  id={"metric-tile-#{metric.id}"}
+  name={metric.name}
+  value={metric.value}
+  trend={metric.trend}
+  trend_pct={metric.trend_pct}
+  accent_color={metric.accent_color}
+/>
+```
 
 ### 6. DAISY UI FIRST
 
@@ -229,8 +273,9 @@ They're also used in PRs so reviewers can see the visual result.
 
 | File | Purpose |
 |---|---|
-| `lib/design_system_showoff_web/live/showcase_live.ex` | ALL components live here |
-| `test/design_system_showoff_web/live/showcase_live_test.exs` | ALL component tests |
+| `lib/design_system_showoff_web/components/<name>.ex` | Function component module (one per component) |
+| `lib/design_system_showoff_web/live/showcase_live.ex` | Showcase page — imports and renders components, manages state |
+| `test/design_system_showoff_web/live/showcase_live_test.exs` | ALL component tests (rendered via showcase page) |
 | `assets/css/app.css` | DaisyUI theme definitions |
 | `.opencode/design-tokens.md` | Design token reference |
 | `.opencode/design_system.db` | SQLite living memory (you manage this) |
