@@ -50,6 +50,41 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
     }
   ]
 
+  @stub_kpi_tiles_row2 [
+    %{
+      id: 5,
+      title: "Win Rate",
+      value: "34%",
+      trend: :up,
+      subtext: "+5% vs last quarter",
+      border_color: nil
+    },
+    %{
+      id: 6,
+      title: "Pipeline Value",
+      value: "$12.8M",
+      trend: :down,
+      subtext: "-$1.2M this month",
+      border_color: nil
+    },
+    %{
+      id: 7,
+      title: "Avg Deal Size",
+      value: "$285K",
+      trend: nil,
+      subtext: "across 45 deals",
+      border_color: nil
+    },
+    %{
+      id: 8,
+      title: "Days to Close",
+      value: "42",
+      trend: nil,
+      subtext: nil,
+      border_color: nil
+    }
+  ]
+
   @stub_grocery_items [
     %{id: 1, name: "Organic Bananas"},
     %{id: 2, name: "Whole Milk"},
@@ -75,6 +110,7 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
       |> assign(:loading, false)
       |> assign(:table_data, @stub_table_data)
       |> assign(:kpi_tiles, @stub_kpi_tiles)
+      |> assign(:kpi_tiles_row2, @stub_kpi_tiles_row2)
       |> assign(:grocery_items, @stub_grocery_items)
       |> assign(:search_query, "")
       |> assign(:search_suggestions, [])
@@ -193,6 +229,17 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <.kpi_tile
               :for={tile <- @kpi_tiles}
+              id={"kpi-tile-#{tile.id}"}
+              title={tile.title}
+              value={tile.value}
+              trend={tile.trend}
+              subtext={tile.subtext}
+              border_color={tile.border_color}
+            />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <.kpi_tile
+              :for={tile <- @kpi_tiles_row2}
               id={"kpi-tile-#{tile.id}"}
               title={tile.title}
               value={tile.value}

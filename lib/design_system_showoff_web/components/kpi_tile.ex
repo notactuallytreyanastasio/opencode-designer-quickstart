@@ -21,7 +21,7 @@ defmodule DesignSystemShowoffWeb.Components.KpiTile do
     <div
       id={@id}
       class="bg-base-100 rounded-xl border border-base-300 px-5 py-4"
-      style={border_style(@border_color)}
+      style={tile_style(@border_color)}
     >
       <div id={"#{@id}-title"} class="text-sm font-medium text-base-content/60 mb-2">
         {@title}
@@ -63,6 +63,10 @@ defmodule DesignSystemShowoffWeb.Components.KpiTile do
   defp subtext_color(:down), do: "text-error"
   defp subtext_color(_), do: "text-base-content/60"
 
-  defp border_style(nil), do: nil
-  defp border_style(color), do: "border-color: #{color};"
+  defp tile_style(nil),
+    do: "box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);"
+
+  defp tile_style(color),
+    do:
+      "border-color: #{color}; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);"
 end
