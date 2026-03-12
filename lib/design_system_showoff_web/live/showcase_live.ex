@@ -9,6 +9,41 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
     %{id: 5, name: "Eve Davis", role: "Developer", status: "Active"}
   ]
 
+  @stub_metrics [
+    %{
+      id: 1,
+      name: "Transacting Omni POS",
+      value: 593_244,
+      trend: :up,
+      trend_pct: 12.5,
+      accent_color: "#FF00FF"
+    },
+    %{
+      id: 2,
+      name: "Monthly Revenue",
+      value: 1_284_930,
+      trend: :up,
+      trend_pct: 8.3,
+      accent_color: "#89CFF0"
+    },
+    %{
+      id: 3,
+      name: "Avg. Order Value",
+      value: 74,
+      trend: :down,
+      trend_pct: 3.1,
+      accent_color: "#FF00FF"
+    },
+    %{
+      id: 4,
+      name: "Returns Processed",
+      value: 2_847,
+      trend: :down,
+      trend_pct: 5.7,
+      accent_color: "#89CFF0"
+    }
+  ]
+
   @stub_grocery_items [
     %{id: 1, name: "Organic Bananas"},
     %{id: 2, name: "Whole Milk"},
@@ -33,6 +68,7 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
       |> assign(:calendar_weeks, calendar_weeks(Date.beginning_of_month(today)))
       |> assign(:loading, false)
       |> assign(:table_data, @stub_table_data)
+      |> assign(:metrics, @stub_metrics)
       |> assign(:grocery_items, @stub_grocery_items)
       |> assign(:search_query, "")
       |> assign(:search_suggestions, [])
@@ -142,6 +178,48 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
             A living gallery of design system components
           </p>
         </div>
+
+        <%!-- Metric Tile Section --%>
+        <section id="metric-tile-section" class="space-y-4">
+          <h2 class="text-xl font-semibold border-b border-base-300 pb-2">
+            Metric Tiles
+          </h2>
+          <div id="metric-tile-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div
+              :for={metric <- @metrics}
+              id={"metric-tile-#{metric.id}"}
+              class="bg-base-100 rounded-lg shadow-sm border border-base-300 px-5 py-4"
+              style={"border-left: 4px solid #{metric.accent_color}; border-left-color: #{metric.accent_color};"}
+            >
+              <div
+                id={"metric-tile-name-#{metric.id}"}
+                class="text-sm font-medium text-base-content/60 mb-1"
+              >
+                {metric.name}
+              </div>
+              <div
+                id={"metric-tile-value-#{metric.id}"}
+                class="text-2xl font-bold text-base-content tracking-tight"
+              >
+                {format_metric_value(metric.value)}
+              </div>
+              <div
+                id={"metric-tile-trend-#{metric.id}"}
+                class={[
+                  "flex items-center gap-1 mt-2 text-sm font-medium",
+                  if(metric.trend == :up, do: "text-success", else: "text-error")
+                ]}
+              >
+                <%= if metric.trend == :up do %>
+                  <.icon name="hero-arrow-trending-up" class="size-4" />
+                <% else %>
+                  <.icon name="hero-arrow-trending-down" class="size-4" />
+                <% end %>
+                <span>{metric.trend_pct}%</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <%!-- Datepicker Section --%>
         <section id="datepicker-section" class="space-y-4">
@@ -372,6 +450,16 @@ defmodule DesignSystemShowoffWeb.ShowcaseLive do
   end
 
   # -- Private helpers --
+
+  defp format_metric_value(value) when is_integer(value) do
+    value
+    |> Integer.to_string()
+    |> String.graphemes()
+    |> Enum.reverse()
+    |> Enum.chunk_every(3)
+    |> Enum.join(",")
+    |> String.reverse()
+  end
 
   defp badge_class("Active"), do: "badge-success"
   defp badge_class("Away"), do: "badge-warning"
